@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GCTF26 — Gryphons Capture The Flag</title>
+<meta name="description" content="Join Gryphons Capture The Flag (GCTF), one of Gryphons' biggest annual events! Compete, learn, win prizes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#050510; --bg2:#0a0a1e; --panel:rgba(17,24,48,.55);
+    --cyan:#00f0ff; --magenta:#ff2fd6; --purple:#7b2fff; --green:#39ff88;
+    --text:#dbe4ff; --muted:#8b95b8; --border:rgba(0,240,255,.15);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;overflow-x:hidden;line-height:1.6}
+  a{color:var(--cyan);text-decoration:none}
+  ::selection{background:var(--magenta);color:#000}
+  ::-webkit-scrollbar{width:10px}
+  ::-webkit-scrollbar-track{background:var(--bg)}
+  ::-webkit-scrollbar-thumb{background:linear-gradient(var(--cyan),var(--purple));border-radius:5px}
+  .container{max-width:1150px;margin:0 auto;padding:0 28px;position:relative;z-index:2}
+
+  /* ===== PARTICLE CANVAS ===== */
+  #particles{position:fixed;inset:0;z-index:0;pointer-events:none}
+  /* scanline overlay */
+  body::after{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.13) 0 1px,transparent 1px 3px);opacity:.5}
+
+  /* ===== NAV ===== */
+  nav{position:fixed;top:0;width:100%;z-index:100;background:rgba(5,5,16,.75);backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+  .nav-inner{display:flex;justify-content:space-between;align-items:center;padding:14px 28px;max-width:1150px;margin:0 auto}
+  .logo{font-family:'Orbitron';font-weight:900;font-size:1.15rem;letter-spacing:2px;
+    background:linear-gradient(90deg,var(--cyan),var(--magenta));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .nav-links a{margin-left:26px;color:var(--muted);font-family:'Share Tech Mono';font-size:.85rem;text-transform:uppercase;letter-spacing:1px;position:relative}
+  .nav-links a::after{content:"";position:absolute;left:0;bottom:-4px;width:0;height:1px;background:var(--cyan);transition:.3s;box-shadow:0 0 8px var(--cyan)}
+  .nav-links a:hover{color:var(--cyan)}
+  .nav-links a:hover::after{width:100%}
+  .nav-cta{border:1px solid var(--cyan);padding:6px 16px !important;border-radius:4px;color:var(--cyan) !important;box-shadow:0 0 12px rgba(0,240,255,.25)}
+
+  /* ===== HERO ===== */
+  .hero{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:130px 24px 70px;position:relative;overflow:hidden}
+  .hero::before{content:"";position:absolute;inset:0;
+    background:radial-gradient(ellipse 60% 50% at 50% 30%,rgba(123,47,255,.22),transparent 70%),
+               radial-gradient(ellipse 50% 40% at 80% 80%,rgba(0,240,255,.12),transparent 70%)}
+  .hero-tag{font-family:'Share Tech Mono';color:var(--green);font-size:.95rem;margin-bottom:18px;text-shadow:0 0 10px rgba(57,255,136,.6)}
+  .hero h1{font-family:'Orbitron';font-weight:900;font-size:clamp(2.6rem,7.5vw,5rem);letter-spacing:3px;position:relative;color:#fff}
+  /* glitch effect */
+  .glitch{position:relative;display:inline-block}
+  .glitch::before,.glitch::after{content:attr(data-text);position:absolute;inset:0;overflow:hidden}
+  .glitch::before{color:var(--cyan);clip-path:inset(0 0 55% 0);animation:glitchA 2.4s infinite linear alternate-reverse;opacity:.8}
+  .glitch::after{color:var(--magenta);clip-path:inset(55% 0 0 0);animation:glitchB 1.9s infinite linear alternate-reverse;opacity:.8}
+  @keyframes glitchA{0%,88%{transform:translate(0)}92%{transform:translate(-6px,2px)}96%{transform:translate(4px,-1px)}100%{transform:translate(0)}}
+  @keyframes glitchB{0%,86%{transform:translate(0)}90%{transform:translate(5px,-2px)}95%{transform:translate(-4px,1px)}100%{transform:translate(0)}}
+  .hero-sub{max-width:620px;margin:24px auto 8px;color:var(--muted);font-size:1.2rem}
+  .hero-sub b{color:var(--cyan)}
+  .typeline{font-family:'Share Tech Mono';color:var(--magenta);min-height:1.6em;font-size:1.05rem;text-shadow:0 0 12px rgba(255,47,214,.5)}
+  .typeline::after{content:"█";animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  .countdown{display:flex;gap:18px;justify-content:center;margin:38px 0;flex-wrap:wrap}
+  .cd-box{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px 26px;min-width:100px;backdrop-filter:blur(10px);position:relative;overflow:hidden}
+  .cd-box::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--cyan),var(--magenta))}
+  .cd-num{font-family:'Orbitron';font-size:2.2rem;font-weight:700;color:var(--cyan);text-shadow:0 0 20px rgba(0,240,255,.6)}
+  .cd-label{font-family:'Share Tech Mono';font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:3px}
+
+  .btn{display:inline-block;padding:15px 42px;font-family:'Orbitron';font-weight:700;font-size:.95rem;letter-spacing:2px;text-transform:uppercase;position:relative;transition:.25s;clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)}
+  .btn-primary{background:linear-gradient(90deg,var(--cyan),#0090ff);color:#000;box-shadow:0 0 30px rgba(0,240,255,.45)}
+  .btn-primary:hover{transform:translateY(-3px) scale(1.03);box-shadow:0 0 55px rgba(0,240,255,.75)}
+  .btn-ghost{background:transparent;border:1px solid var(--magenta);color:var(--magenta);margin-left:16px;box-shadow:0 0 18px rgba(255,47,214,.2) inset}
+  .btn-ghost:hover{background:rgba(255,47,214,.12);transform:translateY(-3px)}
+
+  /* ===== SECTIONS ===== */
+  section{padding:100px 0;position:relative;z-index:2}
+  .section-title{font-family:'Orbitron';font-size:2.1rem;font-weight:900;text-align:center;margin-bottom:14px;letter-spacing:2px;color:#fff}
+  .section-title .accent{background:linear-gradient(90deg,var(--cyan),var(--magenta));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .section-sub{text-align:center;color:var(--muted);font-family:'Share Tech Mono';margin-bottom:56px;font-size:.95rem}
+  .section-sub::before{content:"> "}
+  .divider{width:120px;height:2px;margin:0 auto 60px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);box-shadow:0 0 12px var(--cyan)}
+
+  .grid{display:grid;gap:26px}
+  .grid-3{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:36px 30px;backdrop-filter:blur(12px);position:relative;overflow:hidden;transition:transform .3s,border-color .3s,box-shadow .3s}
+  .card::before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,240,255,.08),transparent 45%,rgba(255,47,214,.06));opacity:0;transition:.3s}
+  .card:hover{transform:translateY(-6px);border-color:var(--cyan);box-shadow:0 18px 50px rgba(0,240,255,.14)}
+  .card:hover::before{opacity:1}
+  .card .icon{font-size:2.4rem;margin-bottom:14px;filter:drop-shadow(0 0 12px rgba(0,240,255,.5))}
+  .card h3{font-family:'Orbitron';font-size:1.05rem;margin-bottom:10px;letter-spacing:1px;color:var(--cyan)}
+  .card p{color:var(--muted);font-size:.98rem}
+
+  /* ===== TICKER ===== */
+  .ticker{background:linear-gradient(90deg,rgba(0,240,255,.06),rgba(255,47,214,.06));border-top:1px solid var(--border);border-bottom:1px solid var(--border);overflow:hidden;padding:14px 0;position:relative;z-index:2}
+  .ticker-track{display:inline-flex;white-space:nowrap;animation:tick 26s linear infinite;font-family:'Share Tech Mono';color:var(--muted);font-size:.95rem;letter-spacing:1px}
+  .ticker-track span{margin:0 34px}
+  .ticker-track .hl{color:var(--green)}
+  @keyframes tick{to{transform:translateX(-50%)}}
+
+  /* ===== PRIZES ===== */
+  .prizes{background:linear-gradient(180deg,transparent,rgba(123,47,255,.07),transparent)}
+  .prize-card{text-align:center;padding:48px 30px}
+  .prize-card .place{font-family:'Share Tech Mono';color:var(--muted);text-transform:uppercase;letter-spacing:3px;font-size:.85rem}
+  .prize-card .amount{font-family:'Orbitron';font-size:2.6rem;font-weight:900;color:var(--cyan);margin:14px 0;text-shadow:0 0 30px rgba(0,240,255,.5)}
+  .prize-card.first .amount{color:#ffd700;font-size:3.4rem;text-shadow:0 0 40px rgba(255,215,0,.55)}
+  .prize-card.first{border-color:rgba(255,215,0,.4)}
+  .prize-card p{color:var(--muted);font-family:'Share Tech Mono';font-size:.9rem}
+
+  /* ===== TERMINAL ===== */
+  .terminal{max-width:760px;margin:0 auto;background:rgba(8,12,26,.85);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 25px 70px rgba(0,0,0,.6),0 0 40px rgba(0,240,255,.07);font-family:'Share Tech Mono'}
+  .term-bar{display:flex;align-items:center;gap:8px;padding:12px 18px;background:rgba(255,255,255,.04);border-bottom:1px solid var(--border)}
+  .dot{width:12px;height:12px;border-radius:50%}
+  .dot.r{background:#ff5f57}.dot.y{background:#febc2e}.dot.g{background:#28c840}
+  .term-title{margin-left:auto;color:var(--muted);font-size:.8rem}
+  .term-body{padding:24px;font-size:.95rem;line-height:2}
+  .term-body .cmd{color:var(--cyan)}
+  .term-body .ok{color:var(--green)}
+  .term-body .warn{color:#ffd700}
+  .term-body .mag{color:var(--magenta)}
+
+  /* ===== TIMELINE ===== */
+  .timeline{max-width:720px;margin:0 auto;position:relative;padding-left:34px}
+  .timeline::before{content:"";position:absolute;left:10px;top:6px;bottom:6px;width:2px;background:linear-gradient(var(--cyan),var(--purple),var(--magenta));box-shadow:0 0 10px var(--cyan)}
+  .t-item{position:relative;padding:0 0 34px 24px;opacity:0;transform:translateX(-20px);transition:.5s}
+  .t-item.shown{opacity:1;transform:translateX(0)}
+  .t-item::before{content:"";position:absolute;left:-30px;top:6px;width:12px;height:12px;border-radius:50%;background:var(--bg);border:2px solid var(--cyan);box-shadow:0 0 12px var(--cyan)}
+  .t-date{font-family:'Orbitron';font-weight:700;color:var(--cyan);font-size:.95rem;letter-spacing:1px}
+  .t-desc{color:var(--muted)}
+
+  /* ===== SPONSORS ===== */
+  .sponsors{display:flex;flex-wrap:wrap;gap:22px;justify-content:center;align-items:center}
+  .sponsor{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:26px 46px;color:var(--muted);font-family:'Orbitron';font-weight:700;letter-spacing:2px;transition:.3s;backdrop-filter:blur(8px)}
+  .sponsor:hover{color:var(--cyan);border-color:var(--cyan);box-shadow:0 0 25px rgba(0,240,255,.2);transform:translateY(-4px)}
+
+  /* ===== FAQ ===== */
+  details{background:var(--panel);border:1px solid var(--border);border-radius:10px;margin-bottom:14px;padding:20px 26px;max-width:780px;margin-left:auto;margin-right:auto;backdrop-filter:blur(10px);transition:.3s}
+  details[open]{border-color:var(--cyan);box-shadow:0 0 25px rgba(0,240,255,.1)}
+  summary{cursor:pointer;font-family:'Rajdhani';font-weight:700;font-size:1.05rem;list-style:none;display:flex;justify-content:space-between;align-items:center}
+  summary::after{content:"+";font-family:'Share Tech Mono';color:var(--cyan);font-size:1.3rem;transition:.3s}
+  details[open] summary::after{transform:rotate(45deg)}
+  details p{margin-top:12px;color:var(--muted)}
+  details p a{color:var(--magenta)}
+
+  /* ===== CTA ===== */
+  .cta{text-align:center;background:linear-gradient(120deg,rgba(0,240,255,.1),rgba(123,47,255,.16),rgba(255,47,214,.1));border-top:1px solid var(--border)}
+  .cta h2{font-family:'Orbitron';font-size:2.3rem;font-weight:900;margin-bottom:14px;color:#fff;letter-spacing:2px}
+  .cta p{color:var(--muted);font-family:'Share Tech Mono';margin-bottom:34px}
+
+  footer{border-top:1px solid var(--border);padding:36px 0;text-align:center;color:var(--muted);font-family:'Share Tech Mono';font-size:.85rem;position:relative;z-index:2}
+  footer a{margin:0 12px;color:var(--muted)}
+  footer a:hover{color:var(--cyan)}
+
+  /* ===== SCROLL REVEAL ===== */
+  .reveal{opacity:0;transform:translateY(36px);transition:opacity .7s ease,transform .7s ease}
+  .reveal.shown{opacity:1;transform:none}
+
+
+  /* ===== RULES ===== */
+  .rules-block{max-width:780px;margin:0 auto 40px}
+  .rules-block h3{font-family:'Orbitron';font-size:1.05rem;letter-spacing:2px;color:var(--magenta);margin-bottom:16px;display:flex;align-items:center;gap:12px}
+  .rules-block h3::before{content:"";width:26px;height:2px;background:var(--magenta);box-shadow:0 0 8px var(--magenta)}
+  .rules-list{list-style:none}
+  .rules-list li{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--cyan);border-radius:8px;padding:14px 20px;margin-bottom:10px;color:var(--muted);backdrop-filter:blur(10px);transition:.25s;font-size:.98rem}
+  .rules-list li:hover{border-left-color:var(--magenta);color:var(--text);transform:translateX(6px)}
+  .rules-list li b{color:var(--text)}
+  .rules-note{max-width:780px;margin:0 auto;background:rgba(255,47,214,.06);border:1px solid rgba(255,47,214,.3);border-radius:12px;padding:28px;backdrop-filter:blur(10px)}
+  .rules-note h3{font-family:'Orbitron';font-size:1.05rem;letter-spacing:2px;color:var(--cyan);margin-bottom:12px}
+  .rules-note p{color:var(--muted);margin-bottom:10px}
+  .rules-note a{color:var(--magenta)}
+  @media(max-width:640px){.nav-links{display:none}.btn-ghost{margin-left:0;margin-top:14px}}
+</style>
+<base target="_blank">
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+
+<nav>
+  <div class="nav-inner">
+    <div class="logo">🏴‍☠️ GCTF26</div>
+    <div class="nav-links">
+      <a href="#about">About</a>
+      <a href="#prizes">Prizes</a>
+      <a href="#schedule">Schedule</a>
+      <a href="#rules">Rules</a>
+      <a href="#faq">FAQ</a>
+      <a href="#register" class="nav-cta">Register</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div>
+    <div class="hero-tag">[ SYSTEM BREACHED ] EVENT INCOMING...</div>
+    <h1><span class="glitch" data-text="GCTF26">GCTF26</span></h1>
+    <p class="hero-sub">Hack. Solve. Win. <b>Gryphons Capture The Flag (GCTF)</b> — one of Gryphons’ biggest annual events — web, crypto, forensics, reversing, pwn and more.</p>
+    <div class="typeline" id="typeline"></div>
+    <div class="countdown" id="countdown">
+      <div class="cd-box"><div class="cd-num" id="d">--</div><div class="cd-label">Days</div></div>
+      <div class="cd-box"><div class="cd-num" id="h">--</div><div class="cd-label">Hours</div></div>
+      <div class="cd-box"><div class="cd-num" id="m">--</div><div class="cd-label">Minutes</div></div>
+      <div class="cd-box"><div class="cd-num" id="s">--</div><div class="cd-label">Seconds</div></div>
+    </div>
+    <a href="#register" class="btn btn-primary">Register Now</a>
+    <a href="#about" class="btn btn-ghost">Learn More</a>
+  </div>
+</header>
+
+<div class="ticker">
+  <div class="ticker-track" id="ticker"></div>
+</div>
+
+<section id="about">
+  <div class="container">
+    <h2 class="section-title reveal">Attack <span class="accent">Vectors</span></h2>
+    <p class="section-sub reveal">cat /etc/categories — 6 challenge tracks loaded</p>
+    <div class="grid grid-3">
+      <div class="card reveal"><div class="icon">🌐</div><h3>Web Exploitation</h3><p>Break into vulnerable apps — injection, auth bypass, SSRF, deserialization and more.</p></div>
+      <div class="card reveal"><div class="icon">🔐</div><h3>Cryptography</h3><p>Crack ciphers, break RSA, forge signatures and recover hidden flags from encrypted data.</p></div>
+      <div class="card reveal"><div class="icon">🕵️</div><h3>Forensics</h3><p>Analyze packet captures, memory dumps and disk images to uncover buried evidence.</p></div>
+      <div class="card reveal"><div class="icon">🛠️</div><h3>Reverse Engineering</h3><p>Decompile binaries, trace the logic, defeat anti-debugging and extract the flag.</p></div>
+      <div class="card reveal"><div class="icon">🐧</div><h3>Pwn / Binary</h3><p>Exploit memory corruption, leak addresses and pop a shell. Classic exploitation.</p></div>
+      <div class="card reveal"><div class="icon">🧩</div><h3>Misc &amp; OSINT</h3><p>Steganography, puzzles, open-source intel and wildcard challenges for the creative.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="prizes" id="prizes">
+  <div class="container">
+    <h2 class="section-title reveal">Loot <span class="accent">Pool</span></h2>
+    <p class="section-sub reveal">sudo cat /var/prizes/pool.txt</p>
+    <div class="grid grid-3">
+      <div class="card prize-card first reveal"><div class="place">🥇 1st Place</div><div class="amount">$600</div><p>+ trophy &amp; elite swag</p></div>
+      <div class="card prize-card reveal"><div class="place">🥈 2nd Place</div><div class="amount">$400</div><p>+ swag pack</p></div>
+      <div class="card prize-card reveal"><div class="place">🥉 3rd Place</div><div class="amount">$200</div><p>+ swag pack</p></div>
+    </div>
+    <div class="grid" style="margin-top:26px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
+      <div class="card prize-card reveal"><div class="place">🏅 TOP 10 TEAMS</div><div class="amount" style="font-size:1.6rem">GCTF MERCH</div><p>+ GCTF Challenge Coin<br>+ Physical Certificate</p></div>
+      <div class="card prize-card reveal"><div class="place">🎟 ALL REGISTRANTS</div><div class="amount" style="font-size:1.6rem;color:var(--magenta)">LUCKY DRAW</div><p>Automatically entered to win<br>a pair of Apple AirPods*</p></div>
+    </div>
+    <p class="reveal" style="text-align:center;margin-top:24px;color:var(--muted);font-family:'Share Tech Mono';font-size:.85rem">*Lucky draw to be held at a later date.</p>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <h2 class="section-title reveal">How to <span class="accent">Join</span></h2>
+    <p class="section-sub reveal">run ./join.sh — three steps, zero excuses</p>
+    <div class="terminal reveal">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">root@ctf:~/join</span></div>
+      <div class="term-body">
+        <span class="cmd">$ git clone https://github.com/you/awesome-team</span><br>
+        <span class="ok">Cloning into 'awesome-team'... done.</span><br>
+        <span class="cmd">$ cd awesome-team &amp;&amp; ./register --team "0xHunters"</span><br>
+        <span class="ok">[✓] Team registered on CTFd platform</span><br>
+        <span class="warn">[!] Competition starts in <span id="term-cd">...</span></span><br>
+        <span class="mag">[*] Skill issue not included. Bring your own.</span> <span style="color:var(--green)">█</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="schedule">
+  <div class="container">
+    <h2 class="section-title reveal">Mission <span class="accent">Timeline</span></h2>
+    <p class="section-sub reveal">cat /var/log/ctf/schedule.log</p>
+    <div class="timeline">
+      <div class="t-item"><div class="t-date">NOV 14, 2026</div><div class="t-desc">Registration opens — create your team on our CTFd platform.</div></div>
+      <div class="t-item"><div class="t-date">NOV 27, 2026</div><div class="t-desc">Registration closes at 23:59 SGT. No late entries.</div></div>
+      <div class="t-item"><div class="t-date">NOV 28, 18:00</div><div class="t-desc">Competition begins — 48 hours of nonstop hacking.</div></div>
+      <div class="t-item"><div class="t-date">NOV 30, 18:00</div><div class="t-desc">Competition ends. Scoreboard freezes. Flags validated.</div></div>
+      <div class="t-item"><div class="t-date">DEC 01, 18:00</div><div class="t-desc">Winners announced. Prizes &amp; glory distributed.</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <h2 class="section-title reveal">Sponsored <span class="accent">By</span></h2>
+    <p class="section-sub reveal">ls /sponsors/ — the legends who make this possible</p>
+    <div class="sponsors reveal">
+      <div class="sponsor">MHA</div>
+      <div class="sponsor">DDAS</div>
+      <div class="sponsor">SCS</div>
+      <div class="sponsor">TBA</div>
+    </div>
+    <p class="reveal" style="text-align:center;margin-top:26px;color:var(--muted);font-family:'Share Tech Mono'">Want in? <a href="mailto:sponsor@example.com" style="color:var(--magenta)">sponsor@example.com</a></p>
+  </div>
+</section>
+
+<section id="rules">
+  <div class="container">
+    <h2 class="section-title reveal">Rules of <span class="accent">Engagement</span></h2>
+    <p class="section-sub reveal">cat /etc/rules — read before you hack. Ignorance is not a defense.</p>
+
+    <div class="rules-block reveal">
+      <h3>⚔️ COMPETITION RULES</h3>
+      <ul class="rules-list">
+        <li>The use of <b>generative AI tools</b> is strictly prohibited during both the qualifiers and finals.</li>
+        <li>Sharing <b>flags, solutions or answers</b> between teams is strictly prohibited.</li>
+        <li>Participants must work <b>only with their registered team members</b>.</li>
+        <li><b>Account sharing</b> between teams is not allowed.</li>
+      </ul>
+    </div>
+
+    <div class="rules-block reveal">
+      <h3>🖥️ CHALLENGE &amp; INFRASTRUCTURE RULES</h3>
+      <ul class="rules-list">
+        <li>Attacking the <b>CTF platform, scoreboard, organisers' infrastructure or other teams</b> is strictly prohibited.</li>
+        <li><b>Denial-of-service (DoS/DDoS)</b> attacks are not allowed.</li>
+        <li>Participants may only attack systems <b>explicitly designated</b> as challenge targets.</li>
+        <li><b>Exploiting the scoring system</b> or manipulating flag submissions is prohibited.</li>
+        <li>Sharing challenge solutions or write-ups publicly <b>before the competition concludes</b> is not allowed.</li>
+      </ul>
+    </div>
+
+    <div class="rules-block reveal">
+      <h3>🛡️ ENFORCEMENT &amp; ADMINISTRATION</h3>
+      <ul class="rules-list">
+        <li>Any violation may result in <b>warnings, point deductions or disqualification</b>.</li>
+        <li>The organisers reserve the right to <b>investigate suspicious activity</b> and rule violations.</li>
+        <li>Technical issues or challenge questions go through the <b>official Discord support channels</b>.</li>
+        <li>Official announcements and clarifications will be communicated through the <b>designated channels</b>.</li>
+      </ul>
+    </div>
+
+    <div class="rules-note reveal">
+      <h3>🎤 QUALIFICATION INTERVIEWS</h3>
+      <p>Following the online qualifiers, teams that successfully qualify for the finals will be required to undergo a <b>short interview</b>.</p>
+      <p>This is to verify that participants understand the challenges they solved and can explain their <b>solutions, methodologies and approaches</b>.</p>
+      <p>Further details regarding the event — especially the finals — will be released later.</p>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="container">
+    <h2 class="section-title reveal">man <span class="accent">ctf</span></h2>
+    <p class="section-sub reveal">frequently exploited questions</p>
+    <details class="reveal"><summary>Who can participate?</summary><p>Anyone — students, professionals, hobbyists. Teams of up to 4 members.</p></details>
+    <details class="reveal"><summary>Is it free?</summary><p>Yes. Registration is completely free, courtesy of our sponsors.</p></details>
+    <details class="reveal"><summary>What do I need?</summary><p>Your laptop and your brain. All challenges run on our CTFd platform via browser or VPN.</p></details>
+    <details class="reveal"><summary>Where do I submit flags?</summary><p>All challenges live on our CTFd instance at <a href="https://gctf26.gryphons.sg">gctf26.gryphons.sg</a>.</p></details>
+    <details class="reveal"><summary>Can I compete solo?</summary><p>Absolutely. Lone-wolf operators welcome — but teams share brainpower.</p></details>
+  </div>
+</section>
+
+<section class="cta" id="register">
+  <div class="container">
+    <h2 class="reveal">READY TO CAPTURE THE FLAG?</h2>
+    <p class="reveal">Registration is free. Spots are limited — grab yours now.</p>
+    <a class="btn btn-primary reveal" href="https://gctf26.gryphons.sg/register">Register on CTFd</a>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <p>© 2026 Gryphons — Powered by <a href="https://ctfd.io" target="_blank">CTFd</a></p>
+    <p style="margin-top:10px"><a href="mailto:contact@example.com">Contact</a> · <a href="#">Discord</a> · <a href="#">Twitter/X</a></p>
+  </div>
+</footer>
+
+<script>
+/* ===== PARTICLE NETWORK ===== */
+const cv = document.getElementById('particles'), cx = cv.getContext('2d');
+let W, H, pts = [];
+function resize(){ W = cv.width = innerWidth; H = cv.height = innerHeight; }
+addEventListener('resize', resize); resize();
+const N = Math.min(90, Math.floor(W*H/16000));
+for(let i=0;i<N;i++) pts.push({x:Math.random()*W, y:Math.random()*H, vx:(Math.random()-.5)*.4, vy:(Math.random()-.5)*.4, r:Math.random()*1.8+.6});
+function draw(){
+  cx.clearRect(0,0,W,H);
+  for(const p of pts){
+    p.x+=p.vx; p.y+=p.vy;
+    if(p.x<0||p.x>W) p.vx*=-1;
+    if(p.y<0||p.y>H) p.vy*=-1;
+    cx.beginPath(); cx.arc(p.x,p.y,p.r,0,7);
+    cx.fillStyle='rgba(0,240,255,.55)'; cx.fill();
+  }
+  for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
+    const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=dx*dx+dy*dy;
+    if(d<12000){ cx.beginPath(); cx.moveTo(pts[i].x,pts[i].y); cx.lineTo(pts[j].x,pts[j].y);
+      cx.strokeStyle=`rgba(123,47,255,${.28*(1-d/12000)})`; cx.stroke(); }
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+
+/* ===== COUNTDOWN ===== */
+const target = new Date("2026-11-28T18:00:00+08:00").getTime(); // 28 Nov, 6pm SGT
+function tick(){
+  const diff = Math.max(0, target - Date.now());
+  const d = Math.floor(diff/864e5), h = Math.floor(diff%864e5/36e5),
+        m = Math.floor(diff%36e5/6e4), s = Math.floor(diff%6e4/1e3);
+  const set=(id,v)=>document.getElementById(id).textContent=String(v).padStart(2,"0");
+  set("d",d); set("h",h); set("m",m); set("s",s);
+  const tc = document.getElementById("term-cd");
+  if(tc) tc.textContent = d+"d "+String(h).padStart(2,"0")+"h "+String(m).padStart(2,"0")+"m "+String(s).padStart(2,"0")+"s";
+}
+setInterval(tick, 1000); tick();
+
+/* ===== TYPEWRITER ===== */
+const lines = ["$ nmap -sV gctf26.gryphons.sg — 1337/tcp open  flag-service",
+               "$ flag{w3lc0m3_t0_gCtF26} — see you on the scoreboard",
+               "$ sudo make me a sandwich... and a team"];
+const el = document.getElementById('typeline');
+let li=0, ci=0, del=false;
+(function type(){
+  const line = lines[li];
+  el.textContent = line.slice(0, ci);
+  if(!del){ ci++; if(ci>line.length){ del=true; return setTimeout(type,2200);} }
+  else{ ci--; if(ci===0){ del=false; li=(li+1)%lines.length; } }
+  setTimeout(type, del?22:55);
+})();
+
+/* ===== TICKER ===== */
+const items = ["🏁 GCTF26","💰 $1,200 PRIZE POOL","🌐 6 CHALLENGE CATEGORIES","👥 TEAMS UP TO 4","⏱ 48-HOUR BATTLE","🎓 OPEN TO EVERYONE","🔓 REGISTRATION FREE"];
+const half = items.map(t=>`<span>${t}</span><span class="hl">//</span>`).join("");
+document.getElementById('ticker').innerHTML = half + half;
+
+/* ===== SCROLL REVEAL ===== */
+const io = new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('shown'); io.unobserve(e.target);} }),{threshold:.12});
+document.querySelectorAll('.reveal,.t-item').forEach(x=>io.observe(x));
+</script>
+</body>
+</html>
